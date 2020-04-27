@@ -1,4 +1,5 @@
 import numpy as np
+<<<<<<< HEAD
 from integral_image import calc_int
 from numba import njit, jit, jitclass, types
 import numba as nb
@@ -11,6 +12,10 @@ import numba as nb
 # ]
 
 # @jitclass(spec)
+=======
+
+
+>>>>>>> a6c4ef3bc4a7b564779b50da11a4b73efcec3826
 class HaarFeature:
     """
     A class that represents a single Haar feature.
@@ -31,6 +36,7 @@ class HaarFeature:
         Subtract: {self.sub_points.__repr__()}
         Shape: {self.shape}
         Type: {self.feature_type}\n"""
+<<<<<<< HEAD
     
     def score(self, integral_image):
         return score(integral_image, self.add_points, self.sub_points, self.shape)
@@ -54,6 +60,10 @@ def compute_region(integral_image, point, shape):
     return ii[y+height][x+width] + ii[y][x] - (ii[y+height][x]+ii[y][x+width])
 
 # @jit(nopython=False)
+=======
+
+
+>>>>>>> a6c4ef3bc4a7b564779b50da11a4b73efcec3826
 def haar_features(image):
     """
     Returns a list of Haar features for the given image.
@@ -105,6 +115,7 @@ def haar_features(image):
 
 if __name__ == '__main__':
     # Test
+<<<<<<< HEAD
     integral = np.ones((3,3))
     hf = haar_features(integral)
     print(len(hf))
@@ -115,3 +126,8 @@ if __name__ == '__main__':
     print(integral)
     print(integral[0, 2])
     print(integral[0, 1])
+=======
+    integral = np.array([[1, 3, 4], [2, 8, 10], [43, 45, 67]])
+    hf = haar_features(integral)
+    print(hf)
+>>>>>>> a6c4ef3bc4a7b564779b50da11a4b73efcec3826
