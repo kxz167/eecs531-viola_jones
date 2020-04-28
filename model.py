@@ -1,6 +1,5 @@
 import scipy
 import numpy as np
-import cv2
 import matplotlib.pyplot as plt
 import os
 from haar import *
@@ -12,8 +11,7 @@ from pprint import pprint, pformat
 import pickle
 from sklearn.feature_selection import SelectPercentile, f_classif
 from numba import njit, jit
-
-LOADING_BAR_LENGTH = 50
+from multiprocessing import Pool
 
 '''
 Define adaboost model + any models here
@@ -48,15 +46,19 @@ class AdaBoostModel:
         data = np.concatenate((pos_images, neg_images), axis=0)
         for i, image in enumerate(data):
             data[i] = calc_int(image)
+        images = []
+        for image in data:
+            images.append(np.pad(image, ((1, 0), (1, 0))))
         features = haar_features(data[0])
+        data = np.asarray(images)
         X, y = _training_data(data, labels, features)
+        features = np.asarray(features)
         with open("training.pkl", 'wb') as f:
             pickle.dump(X, f)
         with open("labels.pkl", 'wb') as f:
             pickle.dump(y, f)
         indices = SelectPercentile(f_classif, percentile=10).fit(X, y).get_support(indices=True)
         X = X[:, indices]
-        features = np.asarray(features)
         features = features[indices]
         bar = progressbar.ProgressBar()
         for _ in bar(range(self.T)):
@@ -67,23 +69,23 @@ class AdaBoostModel:
             results = np.array(results)
             beta_pow = np.power(beta, 1 - results)
             weights = weights*beta_pow
-            alpha = np.log(beta)
+            alpha = np.log(1.0/beta)
             self.alphas.append(alpha)
             self.clf.append(best_clf)
     
     def classify(self, image):
-        integral_image = calc_int(image)
+        integral_image = np.pad(calc_int(image), ((1, 0), (1, 0)))
         classify_score = np.sum([alpha*clf.classify(integral_image) for alpha, clf in zip(self.alphas, self.clf)])
         random_thresh = 0.5*np.sum(self.alphas)
         return 1 if classify_score >= random_thresh else 0
     
     def save(self, filename):
-        with open(filename+".pkl", 'wb') as f:
+        with open("{}.pkl".format(filename), 'wb') as f:
             pickle.dump(self, f)
 
     @staticmethod
     def load(filename):
-        with open(filename+".pkl", 'rb') as f:
+        with open("{}.pkl".format(filename), 'rb') as f:
             return pickle.load(f)
 
 # @jit(forceobj=True)
@@ -91,6 +93,7 @@ def _best_weak_classifier(classifiers: List[WeakClassifier], data, y, weights):
     min_error = float('inf')
     best_clf = None
     best_results = None
+    # print(weights)
     for clf in classifiers:
         results = []
         error = 0
@@ -137,10 +140,16 @@ def _weak_classifiers(X, y, weights, features):
 # @njit
 def _training_data(data, labels, features):
     X = np.empty((len(data), len(features)))
+    bar = progressbar.ProgressBar(maxval=len(data), widgets=[progressbar.Counter('images parsed: %d')])
+    bar.start()
+    count = 0
     for i, integral_image in enumerate(data):
+        count += 1
+        bar.update(count)
         for j, feature in enumerate(features):
             score = feature.score(integral_image)
             X[i, j] = score
+    bar.finish()
     return X, labels
 
 if __name__ == '__main__':
@@ -152,8 +161,8 @@ if __name__ == '__main__':
     # for filename in os.listdir('nonface'):
     #     neg_images.append(image_from(filename))
     
-    pos_images = images_from_dir('face')
-    neg_images = images_from_dir('nonface')
+    pos_images = images_from_dir('face', limit=50)
+    neg_images = images_from_dir('nonface', limit=50)
     model.train(pos_images, neg_images)   
     print(model.classify(image_from('face/1.pgm')))
     print(model.classify(image_from('nonface/1.pgm')))

@@ -1,0 +1,7 @@
+sklearn
+scipy
+numpy
+numba
+progressbar
+PIL
+matplotlib

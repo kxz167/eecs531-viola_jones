@@ -1,21 +1,16 @@
 import numpy as np
-<<<<<<< HEAD
 from integral_image import calc_int
-from numba import njit, jit, jitclass, types
+from numba import njit, jit, jitclass, types, int64
 import numba as nb
+from util import *
 
 # spec = [
-#     ('add_points', nb.typed.List.empty_list(item_type=nb.Tuple)),
-#     ('sub_points', nb.typed.List.empty_list(item_type=nb.Tuple)),
-#     # ('shape', nb),
-#     # ('feature_type', types.string)
+#     ('add_points', int64[:, :]),
+#     ('sub_points', int64[:, :]),
+#     ('shape', int64[:]),
+#     ('feature_type', nb.typeof('test'))
 # ]
-
 # @jitclass(spec)
-=======
-
-
->>>>>>> a6c4ef3bc4a7b564779b50da11a4b73efcec3826
 class HaarFeature:
     """
     A class that represents a single Haar feature.
@@ -25,9 +20,9 @@ class HaarFeature:
     """
 
     def __init__(self, a, s, sh, t):
-        self.add_points = a
-        self.sub_points = s
-        self.shape = sh
+        self.add_points = np.asarray(a)
+        self.sub_points = np.asarray(s)
+        self.shape = np.asarray(sh)
         self.feature_type = t
 
     def __repr__(self):
@@ -36,34 +31,31 @@ class HaarFeature:
         Subtract: {self.sub_points.__repr__()}
         Shape: {self.shape}
         Type: {self.feature_type}\n"""
-<<<<<<< HEAD
     
-    def score(self, integral_image):
-        return score(integral_image, self.add_points, self.sub_points, self.shape)
+    def score(self, integral_image, pad=False):
+        return score(integral_image, self.add_points, self.sub_points, self.shape, pad=pad)
 
-# @jit
-def score(integral_image, add_points, sub_points, shape):
-    return sum([compute_region(integral_image, point, shape) for point in add_points]) \
-            - sum([compute_region(integral_image, point, shape) for point in sub_points]) 
+@njit
+def score(integral_image, add_points, sub_points, shape, pad=False):
+    # add = [compute_region(integral_image, point, shape, pad) for point in add_points]
+    add, sub = 0, 0
+    for point in add_points:
+        add += compute_region(integral_image, point, shape, pad)
+    for point in sub_points:
+        sub += compute_region(integral_image, point, shape, pad)
+    return add - sub
 
-def compute_region(integral_image, point, shape):
+@njit
+def compute_region(integral_image, point, shape, pad=False):
     y, x = (point[1], point[0])
     height, width = shape[1], shape[0]
-    ii = integral_image
-    # A = point
-    # D = (point[0]+shape[0], point[1]+shape[1])
-    # B = (D[0], A[1])
-    # C = (A[0], D[1])
-    # copy = np.copy(integral_image)
-    ii = np.pad(integral_image, ((1, 0), (1, 0)))
-    # return copy[A] + copy[D] - copy[C] - copy[B]
-    return ii[y+height][x+width] + ii[y][x] - (ii[y+height][x]+ii[y][x+width])
+    # Padding is not numba compatible
+    # if pad:
+    #     # continue ii = np.pad(integral_image, ((1, 0), (1, 0)))
+    #     pass
+    return integral_image[y+height][x+width] + integral_image[y][x] - (integral_image[y+height][x] + integral_image[y][x+width])
 
-# @jit(nopython=False)
-=======
-
-
->>>>>>> a6c4ef3bc4a7b564779b50da11a4b73efcec3826
+# @jit(nopython=True)
 def haar_features(image):
     """
     Returns a list of Haar features for the given image.
@@ -115,19 +107,14 @@ def haar_features(image):
 
 if __name__ == '__main__':
     # Test
-<<<<<<< HEAD
-    integral = np.ones((3,3))
+    import time
+    integral = calc_int(image_from('face/1.pgm'))
+    start = time.time()
     hf = haar_features(integral)
-    print(len(hf))
-    integral = calc_int(np.ones((3,3)))
-    hf = haar_features(integral)
-    print(hf)
-    print(hf[12].score(integral))
+    res = hf[17].score(integral, pad=True)
+    end = time.time()
+    print(start - end)
+    print(res)
     print(integral)
     print(integral[0, 2])
     print(integral[0, 1])
-=======
-    integral = np.array([[1, 3, 4], [2, 8, 10], [43, 45, 67]])
-    hf = haar_features(integral)
-    print(hf)
->>>>>>> a6c4ef3bc4a7b564779b50da11a4b73efcec3826
