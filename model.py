@@ -53,6 +53,9 @@ class AdaBoostModel:
             weights /= np.linalg.norm(weights)
             weak_clfs = _weak_classifiers(X, y, weights, features)
             min_error, best_clf, results = _best_weak_classifier(weak_clfs, data, y, weights)
+            if min_error == 0 or min_error > 0.5:
+                bar.finish()
+                break
             beta = min_error/(1-min_error)
             results = np.array(results)
             beta_pow = np.power(beta, 1 - results)
@@ -61,9 +64,12 @@ class AdaBoostModel:
             self.alphas.append(alpha)
             self.clf.append(best_clf)
     
-    def classify(self, image):
+    def classify(self, image, recalc=True):
         # integral_image = np.pad(calc_int(image), ((1, 0), (1, 0)))
-        integral_image = calc_int(image)
+        if recalc:
+            integral_image = calc_int(image)
+        else:
+            integral_image = image
         classify_score = np.sum([alpha*clf.classify(integral_image) for alpha, clf in zip(self.alphas, self.clf)])
         random_thresh = 0.5*np.sum(self.alphas)
         return 1 if classify_score >= random_thresh else 0
@@ -164,15 +170,21 @@ class CascadeClassifier:
         self.clf = []
 
     def train(self, pos_images, neg_images):
-        data, features, labels, weights = preprocess_data(pos_images, neg_images)
+        # data, features, labels, weights = preprocess_data(pos_images, neg_images)
+        tmp_neg = neg_images
         for layer in self.feature_layers:
             model = AdaBoostModel(layer)
-            model.train(pos_images, neg_images, data=data, features=features, labels=labels, weights=weights)
+            model.train(pos_images, tmp_neg)
             self.clf.append(model)
+            results = [model.classify(image) for image in tmp_neg]
+            results = np.asarray(results, dtype=np.bool)
+            tmp_neg = tmp_neg[results]
+            if len(tmp_neg) <= 0:
+                break
     
-    def classify(self, image):
+    def classify(self, image, recalc=True):
         for clf in self.clf:
-            if clf.classify(image) == 0:
+            if clf.classify(image, recalc=recalc) == 0:
                 return 0
         return 1
     
@@ -187,6 +199,7 @@ class CascadeClassifier:
         
 if __name__ == '__main__':
     model = AdaBoostModel(10)
+    layers = [2, 10, 20, 50]
     # pos_images = []
     # limit = 20
 
@@ -194,18 +207,18 @@ if __name__ == '__main__':
     # # for filename in os.listdir('nonface'):
     # #     neg_images.append(image_from(filename))
     
-    pos_images = images_from_dir('face', limit=50)
-    neg_images = images_from_dir('nonface', limit=50)
+    pos_images = images_from_dir('face', limit=100)
+    neg_images = images_from_dir('nonface', limit=500)
+    model = CascadeClassifier(feature_layers=layers)
     model.train(pos_images, neg_images)   
     print(model.classify(image_from('face/1.pgm')))
     print(model.classify(image_from('nonface/1.pgm')))
-    print(model.alphas)
-    for clf in model.clf:
-        print(vars(clf))
-    model.save('test_run')
-    # model.save('test_run_cascade')
+    # print(model.alphas)
+    # for clf in model.clf:
+    #     print(vars(clf))
+    model.save('test_run_cascade')
 
-    layers = [1, 20, 50, 100]
+    
     # pos_weights = np.full(len(pos_images), 1/(2*len(pos_images)))
     # neg_weights = np.full(len(neg_images), 1/(2*len(neg_images)))
     # weights = np.concatenate((pos_weights, neg_weights), axis=0)

@@ -53,7 +53,7 @@ def scores(clf, pos_images, neg_images):
     tpr = np.sort(tpr)
     fpr = np.sort(fpr)
     print("False Positive Rate: %d/%d (%f)" % (false_positive, len(neg_images), false_positive/len(neg_images)))
-    print("False Negative Rate: %d/%d (%f)" % (false_negative, len(pos_images), false_negative/len(pos_images)))
+    # print("False Negative Rate: %d/%d (%f)" % (false_negative, len(pos_images), false_negative/len(pos_images)))
     print("Accuracy: %d/%d (%f)" % (correct, len(data), correct/len(data)))
     print("Average Classification Time: %f" % (classification_time / len(data)))
     return fpr, tpr, preds, labels
@@ -61,14 +61,20 @@ def scores(clf, pos_images, neg_images):
 def model_confidence(model, image):
     # integral_image = np.pad(calc_int(image), ((1, 0), (1, 0)))
     integral_image = calc_int(image)
-    classify_score = np.sum([alpha*clf.classify(integral_image) for alpha, clf in zip(model.alphas, model.clf)])
-    return classify_score
+    if isinstance(model, AdaBoostModel):
+        classify_score = np.sum([alpha*clf.classify(integral_image) for alpha, clf in zip(model.alphas, model.clf)])
+        return classify_score
+    else:
+        for clf in model.clf:
+            if clf.classify(image) == 0:
+                return np.sum([alpha*weak_clf.classify(integral_image) for alpha, weak_clf in zip(clf.alphas, clf.clf)])
+        return np.sum([alpha*clf.classify(integral_image) for alpha, clf in zip(model.clf[-1].alphas, model.clf[-1].clf)])
 
 if __name__ == "__main__":
-    model = AdaBoostModel.load('test_run')
+    model = AdaBoostModel.load('test_run_no_pad')
     pos_images = images_from_dir('face')
     neg_images = images_from_dir('nonface')
-    fpr, tpr, preds, labels = scores(model, pos_images, neg_images)
+    fpr, tpr, preds, labels = scores(model, np.empty((0, 19, 19)), neg_images)
     plt.plot(fpr, tpr)
     plt.plot(tpr, tpr)
     plt.xlabel('False Positive Rate')

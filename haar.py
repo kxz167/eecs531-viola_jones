@@ -1,4 +1,5 @@
 import numpy as np
+from numba import njit
 
 
 class HaarFeature:
@@ -10,9 +11,9 @@ class HaarFeature:
     """
 
     def __init__(self, a, s, sh, t):
-        self.add_points = a
-        self.sub_points = s
-        self.shape = sh
+        self.add_points = np.asarray(a)
+        self.sub_points = np.asarray(s)
+        self.shape = np.asarray(sh)
         self.feature_type = t
 
     def __repr__(self):
