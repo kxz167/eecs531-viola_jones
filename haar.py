@@ -21,8 +21,38 @@ class HaarFeature:
         Subtract: {self.sub_points.__repr__()}
         Shape: {self.shape}
         Type: {self.feature_type}\n"""
+    
+    def score(self, integral_image, pad=False):
+        return score(integral_image, self.add_points, self.sub_points, self.shape, pad=pad)
 
+@njit
+def score(integral_image, add_points, sub_points, shape, pad=False):
+    # add = [compute_region(integral_image, point, shape, pad) for point in add_points]
+    add, sub = 0, 0
+    for point in add_points:
+        add += compute_region(integral_image, point, shape, pad)
+    for point in sub_points:
+        sub += compute_region(integral_image, point, shape, pad)
+    return add - sub
 
+@njit
+def compute_region(integral_image, point, shape, pad=False):
+    y, x = (point[1], point[0])
+    height, width = shape[1], shape[0]
+    # Padding is not numba compatible
+    # if pad:
+    #     # continue ii = np.pad(integral_image, ((1, 0), (1, 0)))
+    #     pass
+    # return integral_image[y+height][x+width] + integral_image[y][x] - (integral_image[y+height][x] + integral_image[y][x+width])
+    return ii_value(integral_image, x+width, y+height) + ii_value(integral_image, x, y) - (ii_value(integral_image, x, y+height) + ii_value(integral_image, x+width, y))
+
+@njit
+def ii_value(integral_image, x, y):
+    if x == 0 or y == 0:
+        return 0
+    return integral_image[y-1][x-1]
+
+# @jit(nopython=True)
 def haar_features(image):
     """
     Returns a list of Haar features for the given image.
