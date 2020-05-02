@@ -40,21 +40,19 @@ if __name__ == '__main__':
         # int_img = np.cumsum(np.cumsum(gray, axis=0), axis=1)
         # # print(frame.shape)
         # # bar = progressbar.ProgressBar()
-        # faces_found = 0
-        # start = time.time()
-        # for y in range(gray.shape[0]-model_shape[0]):
-        #     for x in range(gray.shape[1]-model_shape[1]):
-        #         pred = model.classify(int_img[y:y+model_shape[0], x:x+model_shape[1]], recalc=False)
-        #         # faces_found += pred
-        #         # print('Found {} faces'.format(faces_found))
-        #         if pred == 1:
-        #             # draw a window
-        #             cv2.rectangle(frame, (x, y), (x+model_shape[1], y+model_shape[0]), (0, 255, 0))
-        #         # pass
-        # q.put(frame)
-        p = 
+        faces_found = 0
+        start = time.time()
+        for y in range(gray.shape[0]-model_shape[0]):
+            for x in range(gray.shape[1]-model_shape[1]):
+                pred = model.classify(int_img[y:y+model_shape[0], x:x+model_shape[1]], recalc=False)
+                # faces_found += pred
+                # print('Found {} faces'.format(faces_found))
+                if pred == 1:
+                    # draw a window
+                    cv2.rectangle(frame, (x, y), (x+model_shape[1], y+model_shape[0]), (0, 255, 0))
+                # pass
         stop = time.time()
-        # print(stop - start)
+        print(stop - start)
         # def classify_and_draw(gray, frame, y, x):
         #     pred = model.classify(gray[y:y+model_shape[1], x:x+model_shape[0]])
         #         # faces_found += pred
