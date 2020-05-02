@@ -44,11 +44,10 @@ if __name__ == '__main__':
         orig_shape = (frame.shape[1], frame.shape[0])
         # frame = cv2.imread('classmates.png')
         # gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        scale_percent = 25
-        width = int(frame.shape[1] * scale_percent / 100)
-        height = int(frame.shape[0] * scale_percent / 100) 
-        dim = (width, height)
-        print(dim)
+        # scale_percent = 25
+        # width = int(frame.shape[1] * scale_percent / 100)
+        # height = int(frame.shape[0] * scale_percent / 100) 
+        dim = (160, 120)
         resized = cv2.resize(frame, dim, interpolation = cv2.INTER_AREA)
         gray = cv2.cvtColor(resized, cv2.COLOR_BGR2GRAY)
         int_img = np.cumsum(np.cumsum(gray, axis=0), axis=1)
@@ -56,15 +55,23 @@ if __name__ == '__main__':
         # # bar = progressbar.ProgressBar()
         faces_found = 0
         start = time.time()
-        for y in range(resized.shape[0]-model_shape[0]):
-            for x in range(resized.shape[1]-model_shape[1]):
-                pred = model.classify(int_img[y:y+model_shape[0], x:x+model_shape[1]], recalc=False)
-                # faces_found += pred
-                # print('Found {} faces'.format(faces_found))
-                if pred == 1:
-                    # draw a window
-                    cv2.rectangle(resized, (x, y), (x+model_shape[1], y+model_shape[0]), (0, 255, 0))
-                # pass
+        max_zoom = 2.0
+        step = 1.3
+        zoom = 1.0
+        tmp = resized
+        while zoom < max_zoom:
+            for y in range(tmp.shape[0]-model_shape[0]):
+                for x in range(tmp.shape[1]-model_shape[1]):
+                    pred = model.classify(int_img[y:y+model_shape[0], x:x+model_shape[1]], recalc=False)
+                    # faces_found += pred
+                    # print('Found {} faces'.format(faces_found))
+                    if pred == 1:
+                        # draw a window
+                        cv2.rectangle(resized, (int(x*zoom), int(y*zoom)), (int((x+model_shape[1])*zoom), int((y+model_shape[0])*zoom)), (0, 255, 0))
+                    # pass
+            zoom *= step
+            tmp = cv2.resize(tmp, (int(tmp.shape[1]/zoom), int(tmp.shape[0]/zoom)), interpolation=cv2.INTER_AREA)
+
         stop = time.time()
         print(stop - start)
         # def classify_and_draw(gray, frame, y, x):

@@ -6,17 +6,18 @@ from haar import *
 import progressbar
 from integral_image import calc_int
 from typing import List
-from util import image_from, images_from_dir
+from util import image_from, images_from_dir, PickleMixin, NumpyEncoder
 from pprint import pprint, pformat
 import pickle
 from sklearn.feature_selection import SelectPercentile, f_classif
 from numba import njit, jit
 from multiprocessing import Pool
+import json
 
 '''
 Define adaboost model + any models here
 '''
-class WeakClassifier:
+class WeakClassifier(PickleMixin):
     def __init__(self, feature, threshold, pol):
         self.feature = feature
         self.threshold = threshold
@@ -24,8 +25,39 @@ class WeakClassifier:
 
     def classify(self, x):
         return 1 if self.pol*self.feature.score(x) < self.pol*self.threshold else 0
+    
+    def train_1d(self, x, y, weights, feature):
+        '''
+        x: 1 dimension data of size n samples
+        y: 1 dimension labels of size n samples
+        '''
+        pos_total = np.sum(weights[y==1])
+        neg_total = np.sum(weights[y==0])
+        # x = x.flatten(1)
+        min_err = weights.sum()
+        possible_thresholds = sorted(zip(x, y, weights), key=lambda key: key[0])
+        neg_seen, pos_seen = 0, 0
+        pos_weights, neg_weights = 0, 0
+        for threshold, label, weight in possible_thresholds:
+            # for pol in [1, -1]:
+            pol = 1 if neg_seen <= pos_seen else -1
+            # preds = np.ones_like(y)
+            # preds[x*pol < threshold*pol] = 0
+            # error = np.sum((preds != y)*weights)
+            error = min(neg_total + pos_weights - neg_weights, pos_total + neg_weights - pos_weights)
+            if error < min_err:
+                min_err = error
+                self.threshold = threshold
+                self.pol = pol
+                self.feature = feature
+            if label == 1:
+                pos_seen += 1
+                pos_weights += weight
+            else:
+                neg_seen += 1
+                neg_weights += weight
 
-class AdaBoostModel:
+class AdaBoostModel(PickleMixin):
 
     def __init__(self, T):
         self.T = T
@@ -63,6 +95,8 @@ class AdaBoostModel:
             alpha = np.log(1.0/beta)
             self.alphas.append(alpha)
             self.clf.append(best_clf)
+        self.alphas = np.asarray(self.alphas)
+        self.clf = np.asarray(self.clf)
     
     def classify(self, image, recalc=True):
         # integral_image = np.pad(calc_int(image), ((1, 0), (1, 0)))
@@ -73,15 +107,6 @@ class AdaBoostModel:
         classify_score = np.sum([alpha*clf.classify(integral_image) for alpha, clf in zip(self.alphas, self.clf)])
         random_thresh = 0.5*np.sum(self.alphas)
         return 1 if classify_score >= random_thresh else 0
-    
-    def save(self, filename):
-        with open("{}.pkl".format(filename), 'wb') as f:
-            pickle.dump(self, f)
-
-    @staticmethod
-    def load(filename):
-        with open("{}.pkl".format(filename), 'rb') as f:
-            return pickle.load(f)
 
 def preprocess_data(pos_images, neg_images):
     pos_weights = np.full(len(pos_images), 1/(2*len(pos_images)))
@@ -128,25 +153,9 @@ def _weak_classifiers(X, y, weights, features):
     classifiers = []
     # iterate each feature
     for i in range(X.shape[1]):
-        feature_vals = X[:, i]
-        sorted_feature_vals = sorted(zip(weights, feature_vals, y), key=lambda x: x[1])
-        pos_seen, neg_seen = 0, 0
-        pos_weights, neg_weights = 0, 0
-        min_error, best_feature, best_threshold, best_polarity = float('inf'), None, None, None
-        for weight, feature_val, label in sorted_feature_vals:
-            error = min(neg_total + pos_weights - neg_weights, pos_total + neg_weights - pos_weights)
-            if error < min_error:
-                min_error = error
-                best_feature = features[i]
-                best_threshold = feature_val
-                best_polarity = 1 if neg_seen < pos_seen else -1
-            if label == 1:
-                pos_seen += 1
-                pos_weights += weight
-            else:
-                neg_seen += 1
-                neg_weights += weight
-        classifiers.append(WeakClassifier(best_feature, best_threshold, best_polarity))
+        weak_clf = WeakClassifier(None, None, None)
+        weak_clf.train_1d(X[:, i], y, weights, features[i])
+        classifiers.append(weak_clf)
     return classifiers
 
 # @njit
@@ -164,7 +173,7 @@ def _training_data(data, labels, features):
     bar.finish()
     return X, labels
 
-class CascadeClassifier:
+class CascadeClassifier(PickleMixin):
     def __init__(self, feature_layers):
         self.feature_layers = feature_layers
         self.clf = []
@@ -187,19 +196,10 @@ class CascadeClassifier:
             if clf.classify(image, recalc=recalc) == 0:
                 return 0
         return 1
-    
-    def save(self, filename):
-        with open("{}.pkl".format(filename), 'wb') as f:
-            pickle.dump(self, f)
-
-    @staticmethod
-    def load(filename):
-        with open("{}.pkl".format(filename), 'rb') as f:
-            return pickle.load(f)
         
 if __name__ == '__main__':
     model = AdaBoostModel(10)
-    layers = [2, 10, 20, 50]
+    layers = [2, 10] # 20, 50]
     # pos_images = []
     # limit = 20
 
@@ -216,7 +216,7 @@ if __name__ == '__main__':
     # print(model.alphas)
     # for clf in model.clf:
     #     print(vars(clf))
-    model.save('test_run_cascade')
+    model.save('test_run_cascade_new_weak')
 
     
     # pos_weights = np.full(len(pos_images), 1/(2*len(pos_images)))

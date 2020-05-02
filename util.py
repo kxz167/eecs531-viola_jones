@@ -1,6 +1,24 @@
 import numpy as np
 from PIL import Image
 import os
+import json
+import pickle 
+
+class NumpyEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        return json.JSONEncoder.default(self, obj)
+
+class PickleMixin:
+    def save(self, filename):
+        with open("{}.pkl".format(filename), 'wb') as f:
+            pickle.dump(self, f)
+
+    @staticmethod
+    def load(filename):
+        with open("{}.pkl".format(filename), 'rb') as f:
+            return pickle.load(f)
 
 def image_from(path):
     if os.path.exists(path):
