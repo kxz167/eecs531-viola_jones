@@ -5,7 +5,11 @@ from multiprocessing import Pipe
 import progressbar
 from integral_image import *
 import time
+import datetime
 from multiprocessing.queues import Queue
+from PIL import Image
+import os
+import pathlib
 
 def process_frame(q, frame):
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -35,6 +39,8 @@ if __name__ == '__main__':
 
     while True:
         ret, frame = cam.read()
+        if frame is None:
+            continue
         orig_shape = (frame.shape[1], frame.shape[0])
         # frame = cv2.imread('classmates.png')
         # gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -42,6 +48,7 @@ if __name__ == '__main__':
         width = int(frame.shape[1] * scale_percent / 100)
         height = int(frame.shape[0] * scale_percent / 100) 
         dim = (width, height)
+        print(dim)
         resized = cv2.resize(frame, dim, interpolation = cv2.INTER_AREA)
         gray = cv2.cvtColor(resized, cv2.COLOR_BGR2GRAY)
         int_img = np.cumsum(np.cumsum(gray, axis=0), axis=1)
@@ -70,7 +77,8 @@ if __name__ == '__main__':
         
         # Pool(4).apply(classify_and_draw, np.ndenumerate(gray), {'gray': gray, 'frame': frame})
         # # # cv2.putText(frame, "Found {} faces".format(int(faces_found)), (10, 500), cv2.FONT_HERSHEY_SIMPLEX, 2, 255)
-        cv2.imshow("Faces", cv2.resize(resized, orig_shape, interpolation=cv2.INTER_AREA))
+        new_frame = cv2.resize(resized, orig_shape, interpolation=cv2.INTER_AREA)
+        cv2.imshow("Faces", new_frame)
         # cv2.waitKey()
         if not ret:
             break
@@ -79,5 +87,12 @@ if __name__ == '__main__':
             # ESC pressed
             print("Escape hit, closing...")
             break
+        if k%256 == ord('s'):
+            dirpath = os.path.abspath('./saves')
+            filename = 'capture_at_{}.jpg'.format(time.strftime("%Y-%m-%d-%H-%M-%S"))
+            filepath = os.path.join(dirpath, filename)
+            path = pathlib.Path(filepath)
+            Image.fromarray(new_frame.astype(np.uint8)).save(path, format="JPEG")
+            print(f"Saved at {filename}")
     cam.release()
     cv2.destroyAllWindows()
