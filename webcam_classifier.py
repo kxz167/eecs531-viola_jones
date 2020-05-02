@@ -5,33 +5,54 @@ from multiprocessing import Pipe
 import progressbar
 from integral_image import *
 import time
+from multiprocessing.queues import Queue
+
+def process_frame(q, frame):
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    int_img = np.cumsum(np.cumsum(gray, axis=0), axis=1)
+    # print(frame.shape)
+    # bar = progressbar.ProgressBar()
+    faces_found = 0
+    start = time.time()
+    for y in range(gray.shape[0]-model_shape[0]):
+        for x in range(gray.shape[1]-model_shape[1]):
+            pred = model.classify(int_img[y:y+model_shape[0], x:x+model_shape[1]], recalc=False)
+            # faces_found += pred
+            # print('Found {} faces'.format(faces_found))
+            if pred == 1:
+                # draw a window
+                cv2.rectangle(frame, (x, y), (x+model_shape[1], y+model_shape[0]), (0, 255, 0))
+            # pass
+    q.put(frame)
 
 if __name__ == '__main__':
     model_shape = (19, 19) # dataset size
-    model = AdaBoostModel.load('test_run_no_pad')
+    model = AdaBoostModel.load('test_run_cascade_pad')
     cam = cv2.VideoCapture(0)
     # cv2.namedWindow("test")
-
+    q = Queue(-1)
     img_counter = 0
 
     while True:
         ret, frame = cam.read()
         # frame = cv2.imread('classmates.png')
-        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        int_img = calc_int(gray)
-        # print(frame.shape)
-        # bar = progressbar.ProgressBar()
-        faces_found = 0
-        start = time.time()
+        # gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        # int_img = np.cumsum(np.cumsum(gray, axis=0), axis=1)
+        # # print(frame.shape)
+        # # bar = progressbar.ProgressBar()
+        # faces_found = 0
+        # start = time.time()
         # for y in range(gray.shape[0]-model_shape[0]):
         #     for x in range(gray.shape[1]-model_shape[1]):
-        #         # pred = model.classify(int_img[y:y+model_shape[0], x:x+model_shape[1]], recalc=False)
-        #         # # faces_found += pred
-        #         # # print('Found {} faces'.format(faces_found))
-        #         # if pred == 1:
-        #         #     # draw a window
-        #         #     cv2.rectangle(frame, (x, y), (x+model_shape[1], y+model_shape[0]), (0, 255, 0))
-        #         pass
+        #         pred = model.classify(int_img[y:y+model_shape[0], x:x+model_shape[1]], recalc=False)
+        #         # faces_found += pred
+        #         # print('Found {} faces'.format(faces_found))
+        #         if pred == 1:
+        #             # draw a window
+        #             cv2.rectangle(frame, (x, y), (x+model_shape[1], y+model_shape[0]), (0, 255, 0))
+        #         # pass
+        # q.put(frame)
+        p = 
         stop = time.time()
         # print(stop - start)
         # def classify_and_draw(gray, frame, y, x):
