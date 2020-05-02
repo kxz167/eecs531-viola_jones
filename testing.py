@@ -75,6 +75,7 @@ if __name__ == "__main__":
     pos_images = images_from_dir('face')
     neg_images = images_from_dir('nonface')
     fpr, tpr, preds, labels = scores(model, np.empty((0, 19, 19)), neg_images)
+    fpr, tpr = roc_curve(labels, preds)
     plt.plot(fpr, tpr)
     plt.plot(tpr, tpr)
     plt.xlabel('False Positive Rate')
