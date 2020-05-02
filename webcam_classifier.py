@@ -36,7 +36,7 @@ if __name__ == '__main__':
     while True:
         ret, frame = cam.read()
         # frame = cv2.imread('classmates.png')
-        # gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         # int_img = np.cumsum(np.cumsum(gray, axis=0), axis=1)
         # # print(frame.shape)
         # # bar = progressbar.ProgressBar()
