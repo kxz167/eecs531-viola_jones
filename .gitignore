@@ -1,7 +1,3 @@
-face/
-
-nonface/
-
 __pycache__/
 labels.pkl
 training.pkl
