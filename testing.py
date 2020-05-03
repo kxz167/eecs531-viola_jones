@@ -3,6 +3,7 @@ import time
 from model import *
 import matplotlib.pyplot as plt
 from sklearn.metrics import roc_curve
+from util import PickleMixin
 
 def scores(clf, pos_images, neg_images):
     # Define variables for remember classification results
@@ -100,10 +101,11 @@ def scores(clf, pos_images, neg_images):
 
     bar.finish()
     
-    #Sort rates
+    # Sort rates
     tpr = np.sort(tpr)
     fpr = np.sort(fpr)
 
+    # Output Runing statistics
     print("False Positive Rate: %d/%d (%f)" % (false_positive, len(neg_images), false_positive/len(neg_images)))
     print("False Negative Rate: %d/%d (%f)" % (false_negative, len(pos_images), false_negative/len(pos_images)))
     print("Accuracy: %d/%d (%f)" % (correct, len(data), correct/len(data)))
@@ -125,8 +127,7 @@ def model_confidence(model, image):
 
 if __name__ == "__main__":
     # Utilize the load method for any classifier to run test data
-    model = AdaBoostModel.load('cascade_200-200')
-    # model = CascadeClassifier.load('test_run_cascade_ad500-1000')
+    model = PickleMixin.load('cascade_50-100')
 
     # Get all the positive and negative images from the image directories:
     pos_images = images_from_dir('face')

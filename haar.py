@@ -23,37 +23,36 @@ class HaarFeature:
         Shape: {self.shape}
         Type: {self.feature_type}\n"""
     
+    # Call the scoring function
     def score(self, integral_image, pad=False):
         return score(integral_image, self.add_points, self.sub_points, self.shape, pad=pad)
 
-@njit
+# Returns haar score
 def score(integral_image, add_points, sub_points, shape, pad=False):
-    # add = [compute_region(integral_image, point, shape, pad) for point in add_points]
+    # Define add, subtract base:
     add, sub = 0, 0
+
+    # Iterate through all additive points, and subtractive points
     for point in add_points:
         add += compute_region(integral_image, point, shape, pad)
     for point in sub_points:
         sub += compute_region(integral_image, point, shape, pad)
     return add - sub
 
-@njit
+# Computes sum of image over region
 def compute_region(integral_image, point, shape, pad=False):
-    y, x = (point[1], point[0])
-    height, width = shape[1], shape[0]
-    # Padding is not numba compatible
-    # if pad:
-    #     # continue ii = np.pad(integral_image, ((1, 0), (1, 0)))
-    #     pass
-    # return integral_image[y+height][x+width] + integral_image[y][x] - (integral_image[y+height][x] + integral_image[y][x+width])
+    # Break out tuple values:
+    x,y = point
+    width, height = shape
+    
     return ii_value(integral_image, x+width, y+height) + ii_value(integral_image, x, y) - (ii_value(integral_image, x, y+height) + ii_value(integral_image, x+width, y))
 
-@njit
+# Grab values from the integral image
 def ii_value(integral_image, x, y):
     if x == 0 or y == 0:
         return 0
     return integral_image[y-1][x-1]
 
-# @jit(nopython=True)
 def haar_features(image):
     """
     Returns a list of Haar features for the given image.
@@ -62,12 +61,14 @@ def haar_features(image):
     img_height, img_width = image.shape
 
     features = []
-    # Loop through rectangle dimensions, then through image indices
+    # Loop through rectangle dimensions of the image
     for feat_width in range(1, img_width + 1):
         for feat_height in range(1, img_height + 1):
+            # Loop through the remaining space (of the feature)
             for feat_x in range(0, img_width - feat_width + 1):
                 for feat_y in range(0, img_height - feat_height + 1):
 
+                    #Define feature coordinates
                     base = (feat_x, feat_y)
                     shape = (feat_width, feat_height)
 

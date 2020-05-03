@@ -10,17 +10,18 @@ from multiprocessing.queues import Queue
 from PIL import Image
 import os
 import pathlib
+from util import PickleMixin
 
 if __name__ == '__main__':
     # Define the model shape we trained with
     model_shape = (19, 19) # dataset size
     
     # Specify the model file to be used and camera number
-    model_file = 'test_run_cascade_600'
+    model_file = 'test_run_cascade_cc100-300'
     camera_number = 0
 
     #Define both the model and the camera to capture and define from
-    model = AdaBoostModel.load(model_file)
+    model = PickleMixin.load(model_file)
     cam = cv2.VideoCapture(camera_number)
 
     # Loop through taking camera input
@@ -56,7 +57,7 @@ if __name__ == '__main__':
         # Run through our classification:
         # Define the range of feature size regions (zoom = multiplied factor with feature of size 19 pixels)
         zoom = 1.0
-        max_zoom = 2.0
+        max_zoom = 1.0
         step = 1.3
 
         # Temporary resized image:

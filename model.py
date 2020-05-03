@@ -287,7 +287,7 @@ def _training_data(data, labels, features):
     X = np.empty((len(data), len(features)))
 
     # Begin a progress bar
-    bar = progressbar.ProgressBar(maxval=len(data), widgets=[progressbar.Counter('images parsed: %d')])
+    bar = progressbar.ProgressBar(maxval=len(data), widgets=[progressbar.Counter('Images parsed: %d')])
     bar.start()
     
     # Run through every image from the training data
@@ -312,8 +312,8 @@ if __name__ == '__main__':
     layers = [2, 10, 20, 50]
 
     #Define number of images for each set:
-    num_pos_images = 200
-    num_neg_images = 200
+    num_pos_images = 50
+    num_neg_images = 100
  
     # Get all the facial images data. Option to limit number of images:
     pos_images = images_from_dir('face', limit= num_pos_images)
@@ -330,4 +330,4 @@ if __name__ == '__main__':
     print("Check non-face image (expected 0): ", model.classify(image_from('nonface/1.pgm')))
 
     # Save the computed model
-    model.save('cascade_200-200')
+    model.save('cascade_50-100')
