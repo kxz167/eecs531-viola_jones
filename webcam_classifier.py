@@ -13,12 +13,12 @@ import pathlib
 from util import PickleMixin
 
 if __name__ == '__main__':
+    # Specify the model file to be used and camera number
+    model_file = 'cascade_50-100'
+    camera_number = 0
+
     # Define the model shape we trained with
     model_shape = (19, 19) # dataset size
-    
-    # Specify the model file to be used and camera number
-    model_file = 'test_run_cascade_cc100-300'
-    camera_number = 0
 
     #Define both the model and the camera to capture and define from
     model = PickleMixin.load(model_file)
@@ -98,7 +98,7 @@ if __name__ == '__main__':
 
         # If we want to save, we can capture the previous image
         if k%256 == ord('s'):
-            dirpath = os.path.abspath('./saves')
+            dirpath = os.path.abspath('./')
             filename = 'capture_at_{}.jpg'.format(time.strftime("%Y-%m-%d-%H-%M-%S"))
             filepath = os.path.join(dirpath, filename)
             path = pathlib.Path(filepath)

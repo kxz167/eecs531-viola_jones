@@ -28,6 +28,7 @@ class HaarFeature:
         return score(integral_image, self.add_points, self.sub_points, self.shape, pad=pad)
 
 # Returns haar score
+@njit
 def score(integral_image, add_points, sub_points, shape, pad=False):
     # Define add, subtract base:
     add, sub = 0, 0
@@ -40,6 +41,7 @@ def score(integral_image, add_points, sub_points, shape, pad=False):
     return add - sub
 
 # Computes sum of image over region
+@njit
 def compute_region(integral_image, point, shape, pad=False):
     # Break out tuple values:
     x,y = point
@@ -48,6 +50,7 @@ def compute_region(integral_image, point, shape, pad=False):
     return ii_value(integral_image, x+width, y+height) + ii_value(integral_image, x, y) - (ii_value(integral_image, x, y+height) + ii_value(integral_image, x+width, y))
 
 # Grab values from the integral image
+@njit
 def ii_value(integral_image, x, y):
     if x == 0 or y == 0:
         return 0

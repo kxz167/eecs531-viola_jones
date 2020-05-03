@@ -305,15 +305,15 @@ def _training_data(data, labels, features):
     return X, labels
         
 if __name__ == '__main__':
-    # Define the model type to be added
-    # model = AdaBoostModel(10)
-    
     # Define they layers for the classifiers
     layers = [2, 10, 20, 50]
 
-    #Define number of images for each set:
+    # Define number of images for each set:
     num_pos_images = 50
     num_neg_images = 100
+
+    # Define the name for the saved model file:
+    model_name = 'cascade_50-100'
  
     # Get all the facial images data. Option to limit number of images:
     pos_images = images_from_dir('face', limit= num_pos_images)
@@ -330,4 +330,4 @@ if __name__ == '__main__':
     print("Check non-face image (expected 0): ", model.classify(image_from('nonface/1.pgm')))
 
     # Save the computed model
-    model.save('cascade_50-100')
+    model.save(model_name)
